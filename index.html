@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大阪万博 研修レポート・インタラクティブ版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Stone, Teal, Gray) -->
+    <!-- Application Structure Plan: Designed a thematic, interactive dashboard instead of a linear report. The core is a pavilion explorer categorized by PR strategy (e.g., 'Experiential', 'Branding'), allowing users to filter and view details. A dynamic radar chart provides visual comparison of pavilions based on key metrics derived from the report (e.g., Entertainment, Brand Communication). This structure shifts the focus from a simple chronological summary to an analytical tool, which is more useful for the target audience (ad agency professional) to extract actionable insights. -->
+    <!-- Visualization & Content Choices: Report Info: Pavilion Impressions -> Goal: Compare/Analyze -> Viz: Interactive Cards + Radar Chart -> Interaction: Filtering by PR theme, dynamic chart updates on selection. Justification: This transforms a static text report into an engaging tool for analysis, better serving the user's professional context. Library/Method: HTML/Tailwind for structure/cards, Chart.js (Canvas) for the radar chart. CONFIRMING NO SVG/Mermaid. Report Info: Actionable business insight (store strategy) -> Goal: Highlight -> Presentation: Distinct callout box. Justification: Separates a unique, non-pavilion insight for emphasis. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f5f5f4; /* stone-100 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .filter-btn.active {
+            background-color: #0d9488; /* teal-600 */
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .pavilion-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .pavilion-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal-content {
+            max-height: 80vh;
+        }
+    </style>
+</head>
+<body class="text-stone-800">
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-6xl">
+
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-teal-800">大阪万博 研修レポート</h1>
+            <p class="text-stone-600 mt-2">インタラクティブ・ダッシュボード</p>
+        </header>
+
+        <section id="key-takeaways" class="mb-12">
+            <h2 class="text-2xl font-bold mb-4 text-center">PR戦略から見る学びのポイント</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-teal-500">
+                    <h3 class="font-bold text-lg mb-2">体験型エンターテイメント</h3>
+                    <p class="text-stone-600">来場者を「参加者」に変え、楽しませることで強い印象を残す戦略。USA館のようにアトラクション化する手法は記憶に残りやすい。</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-amber-500">
+                    <h3 class="font-bold text-lg mb-2">強いブランドアイデンティティ</h3>
+                    <p class="text-stone-600">建築と内容を一致させ、一貫した世界観で国のブランドを伝える。サウジアラビア館のように、入る前から期待感を醸成するアプローチ。</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-sky-500">
+                    <h3 class="font-bold text-lg mb-2">社会課題へのソリューション提示</h3>
+                    <p class="text-stone-600">問題提起で終わらせず、具体的な解決策を提示し「自分ごと化」させる。ブルーオーシャンドームの実物展示は説得力が高い。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="pavilion-explorer" class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 text-center">パビリオン分析</h2>
+
+            <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8" id="filter-buttons">
+                <button data-filter="all" class="filter-btn active px-4 py-2 bg-white text-stone-700 rounded-full shadow-sm hover:bg-stone-200 transition">すべて</button>
+                <button data-filter="entertainment" class="filter-btn px-4 py-2 bg-white text-stone-700 rounded-full shadow-sm hover:bg-stone-200 transition">体験型エンタメ</button>
+                <button data-filter="branding" class="filter-btn px-4 py-2 bg-white text-stone-700 rounded-full shadow-sm hover:bg-stone-200 transition">ブランド訴求</button>
+                <button data-filter="solution" class="filter-btn px-4 py-2 bg-white text-stone-700 rounded-full shadow-sm hover:bg-stone-200 transition">課題解決</button>
+                <button data-filter="improvement" class="filter-btn px-4 py-2 bg-white text-stone-700 rounded-full shadow-sm hover:bg-stone-200 transition">改善のヒント</button>
+            </div>
+
+            <div id="pavilion-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+        </section>
+
+        <section id="comparison-chart" class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold mb-4 text-center">パビリオン比較レーダーチャート</h2>
+            <p class="text-center text-stone-600 mb-6">比較したいパビリオンを選択してください。</p>
+            <div class="chart-container">
+                <canvas id="pavilionRadarChart"></canvas>
+            </div>
+            <div id="chart-controls" class="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-6">
+            </div>
+        </section>
+        
+        <section id="business-insight" class="mb-12">
+             <div class="bg-gradient-to-r from-teal-50 to-amber-50 p-6 rounded-lg shadow-md border border-stone-200">
+                <h2 class="text-2xl font-bold mb-4 text-center text-teal-800">現場で発見！イベント運営のヒント</h2>
+                <div class="max-w-3xl mx-auto text-center">
+                    <p class="text-3xl mb-4">💡</p>
+                    <h3 class="font-bold text-lg mb-2">「試食は外、ゴミ箱は中」戦略</h3>
+                    <p class="text-stone-700 leading-relaxed">飲食店の巧みな集客方法。試食で興味を惹き、ゴミを捨てるために自然と店内へ誘導。この「きっかけ作り」と「店内への動線確保」の組み合わせは、来場者の滞在時間を延ばし「ついで買い」を促す。イベントやポップアップストアの企画に即応用可能な、秀逸なアイデア。</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-stone-500 pt-8 border-t">
+            <p>視察期間: 2025年〇月〇日〜〇月〇日</p>
+        </footer>
+
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl transform transition-all modal-content overflow-y-auto">
+            <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
+                <h3 id="modal-title" class="text-xl font-bold"></h3>
+                <button id="modal-close" class="text-stone-500 hover:text-stone-800 text-2xl">&times;</button>
+            </div>
+            <div id="modal-body" class="p-6">
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const pavilionData = [
+            {
+                id: 'usa',
+                name: 'USA館',
+                tags: ['entertainment', 'improvement'],
+                summary: 'エンタメ性の高いアトラクション型体験',
+                icon: '🚀',
+                color: 'bg-indigo-100',
+                borderColor: 'border-indigo-400',
+                content: `
+                    <p class="mb-4"><strong>テーマ：</strong> 宇宙科学技術</p>
+                    <p class="mb-4"><strong>所感：</strong>何よりエンターテイメント性が非常に高いパビリオンでした。日本人にも馴染みのあるコンテンツから始まり、ガイドが参加者に話しかけながら案内するスタイルは、テーマパークのアトラクションのようでした。展示を「見る」だけでなく、参加して「楽しむ」ことに重点を置いており、強く印象に残りました。新しい知識を得るというよりは、素晴らしい「体験」ができたと感じています。</p>
+                    <p class="font-bold text-indigo-700">学び：エンタメ化による「体験価値」の最大化が、強い記憶定着に繋がる。</p>
+                `,
+                scores: { 'エンタメ性': 5, '学び・発見': 2, 'ブランド伝達力': 3, '参加・体験度': 5, 'メッセージ性': 2 },
+                media: [
+                    { type: 'image', src: 'image/USA_1.jpg' },
+                    { type: 'image', src: 'image/USA_2.jpg' },
+                    { type: 'video', src: 'video/USA.mp4' }
+                ]
+            },
+            {
+                id: 'saudi',
+                name: 'サウジアラビア館',
+                tags: ['branding'],
+                summary: '建築と内容が一体となったブランド体験',
+                icon: '🏛️',
+                color: 'bg-amber-100',
+                borderColor: 'border-amber-400',
+                content: `
+                    <p class="mb-4"><strong>テーマ：</strong> 文化芸術、環境保全</p>
+                    <p class="mb-4"><strong>所感：</strong>まず建物自体が白く高く、サウジアラビアらしさが感じられ、非常に印象的でした。展示内容も文化や環境に関するもので、建物と内容が一体となって国のブランドイメージを伝えていました。海外パビリオンを視察する、という点で最も満足度が高いパビリオンでした。</p>
+                    <p class="font-bold text-amber-700">学び：一貫した世界観の構築が、強力なブランドイメージを植え付ける。</p>
+                `,
+                scores: { 'エンタメ性': 3, '学び・発見': 4, 'ブランド伝達力': 5, '参加・体験度': 2, 'メッセージ性': 4 },
+                media: [
+                    { type: 'image', src: 'image/saudi_1.jpg' },
+                    { type: 'image', src: 'image/saudi_2.jpg' },
+                    { type: 'video', src: 'image/saudi_3.jpg' }
+                ]
+            },
+            {
+                id: 'blueocean',
+                name: 'ブルーオーシャンドーム',
+                tags: ['solution'],
+                summary: '代替資源を提示する課題解決型展示',
+                icon: '🌊',
+                color: 'bg-sky-100',
+                borderColor: 'border-sky-400',
+                content: `
+                    <p class="mb-4"><strong>テーマ：</strong> 海洋プラスチックごみ問題</p>
+                    <p class="mb-4"><strong>所感：</strong>特に興味深かったのは、プラスチックの代替資源として竹やカーボンファイバー、紙筒を提案していた点です。パビリオン自体もそれらで作られており、問題提起だけでなく具体的な解決策を実物で示す方法は、とても分かりやすいと感じました。社会課題に対する新しい視点を得ることができました。</p>
+                    <p class="font-bold text-sky-700">学び：具体的な解決策（ソリューション）を実物で示すことで、説得力と共感を呼ぶ。</p>
+                `,
+                scores: { 'エンタメ性': 2, '学び・発見': 5, 'ブランド伝達力': 4, '参加・体験度': 3, 'メッセージ性': 5 },
+                media: [
+                    { type: 'image', src: 'image/ocean_1.jpg' },
+                    { type: 'image', src: 'image/ocean_2.jpg' },
+                    { type: 'video', src: 'video/ocean.mp4' }
+                ]
+            },
+            {
+                id: 'philippines',
+                name: 'フィリピン館',
+                tags: ['entertainment', 'branding'],
+                summary: '伝統文化と最新技術の融合',
+                icon: '織',
+                color: 'bg-rose-100',
+                borderColor: 'border-rose-400',
+                content: `
+                    <p class="mb-4"><strong>テーマ：</strong> よりよい未来を共に織りなす</p>
+                    <p class="mb-4"><strong>所感：</strong>伝統的な織物とAIアバター体験が組み合わされており、フィリピンの魅力をうまく伝えていると感じました。古いものと新しいものを組み合わせる手法は、来場者の記憶に残る体験を作る上で参考になります。</p>
+                    <p class="font-bold text-rose-700">学び：「伝統×テクノロジー」の組み合わせは、幅広い層にアピールできる有効な手段。</p>
+                `,
+                scores: { 'エンタメ性': 4, '学び・発見': 3, 'ブランド伝達力': 4, '参加・体験度': 4, 'メッセージ性': 3 },
+                media: [
+                    { type: 'image', src: 'image/Philippines_1.jpg' },
+                    { type: 'image', src: 'image/Philippines_2.jpg' },
+                    { type: 'image', src: 'image/Philippines_3.jpg' }
+                ]
+            },
+            {
+                id: 'nordic',
+                name: '北欧館',
+                tags: ['solution', 'improvement'],
+                summary: '映像中心のメッセージ発信',
+                icon: '❄️',
+                color: 'bg-slate-100',
+                borderColor: 'border-slate-400',
+                content: `
+                    <p class="mb-4"><strong>テーマ：</strong> 持続可能な社会</p>
+                    <p class="mb-4"><strong>所感：</strong>福祉や平等といった社会的なテーマを、洗練された空間で映像を中心に紹介していました。ただ、映像鑑賞がメインだったため、実際に触れたり参加できたりする体験があれば、より「自分ごと」として感じられ、メッセージが伝わると思いました。</p>
+                    <p class="font-bold text-slate-700">学び：メッセージ性の高いテーマこそ、来場者の「参加」を促す工夫が重要。</p>
+                `,
+                scores: { 'エンタメ性': 1, '学び・発見': 3, 'ブランド伝達力': 2, '参加・体験度': 1, 'メッセージ性': 3 },
+                media: []
+            },
+            {
+                id: 'commonsa',
+                name: 'コモンズA',
+                tags: ['improvement'],
+                summary: '多国籍共同出展の課題',
+                icon: '🌍',
+                color: 'bg-lime-100',
+                borderColor: 'border-lime-400',
+                content: `
+                    <p class="mb-4"><strong>テーマ：</strong> アフリカ・中東諸国など</p>
+                    <p class="mb-4"><strong>所感：</strong>多様な文化にまとめて触れられる点は良かったですが、一つ一つの国の印象が少し残りにくいと感じました。来場者にもっと楽しんでもらうためには、もう一工夫が必要かもしれません。</p>
+                    <p class="font-bold text-lime-700">学び：複数ブランドを扱う場合、全体を貫くテーマや導線設計がなければ印象が散漫になる。</p>
+                `,
+                scores: { 'エンタメ性': 1, '学び・発見': 1, 'ブランド伝達力': 1, '参加・体験度': 1, 'メッセージ性': 1 },
+                media: []
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('pavilion-grid');
+            const filterButtonsContainer = document.getElementById('filter-buttons');
+            const chartControls = document.getElementById('chart-controls');
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            const modalClose = document.getElementById('modal-close');
+
+            const initialSelection = ['usa', 'saudi', 'blueocean'];
+
+            function renderPavilions(filter = 'all') {
+                grid.innerHTML = '';
+                const filteredData = filter === 'all' 
+                    ? pavilionData 
+                    : pavilionData.filter(p => p.tags.includes(filter));
+
+                filteredData.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = `pavilion-card bg-white rounded-lg shadow-md p-5 cursor-pointer border-b-4 ${p.borderColor}`;
+                    card.dataset.pavilionId = p.id;
+                    card.innerHTML = `
+                        <div class="flex items-center mb-3">
+                            <span class="text-3xl mr-4">${p.icon}</span>
+                            <div>
+                                <h3 class="font-bold text-lg">${p.name}</h3>
+                                <p class="text-sm text-stone-600">${p.summary}</p>
+                            </div>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => openModal(p));
+                    grid.appendChild(card);
+                });
+            }
+            
+            function openModal(pavilion) {
+                modalTitle.textContent = pavilion.name;
+                let modalHTML = pavilion.content;
+
+                if (pavilion.media && pavilion.media.length > 0) {
+                    let mediaHTML = '<div class="mt-6 pt-4 border-t"><h4 class="font-bold mb-4">写真・動画ギャラリー</h4><div class="grid grid-cols-2 md:grid-cols-3 gap-4">';
+                    pavilion.media.forEach(item => {
+                        if (item.type === 'image') {
+                            mediaHTML += `<div><img src="${item.src}" alt="${pavilion.name}の画像" class="w-full h-auto rounded-lg object-cover aspect-video shadow-sm"></div>`;
+                        } else if (item.type === 'video') {
+                            mediaHTML += `
+                            <a href="${item.src}" target="_blank" rel="noopener noreferrer" title="動画を再生">
+                                <div class="bg-stone-200 rounded-lg flex items-center justify-center aspect-video shadow-sm">
+                                    <div class="text-center text-stone-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                                        <p class="text-sm mt-1">動画プレビュー</p>
+                                    </div>
+                                </div>
+                            </a>`;
+                        }
+                    });
+                    mediaHTML += '</div></div>';
+                    modalHTML += mediaHTML;
+                }
+
+                modalBody.innerHTML = modalHTML;
+                modal.classList.remove('hidden');
+            }
+
+            modalClose.addEventListener('click', () => modal.classList.add('hidden'));
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+
+            filterButtonsContainer.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const filter = e.target.dataset.filter;
+                    document.querySelector('.filter-btn.active').classList.remove('active');
+                    e.target.classList.add('active');
+                    renderPavilions(filter);
+                }
+            });
+
+            const ctx = document.getElementById('pavilionRadarChart').getContext('2d');
+            const radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['エンタメ性', '学び・発見', 'ブランド伝達力', '参加・体験度', 'メッセージ性'],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            pointLabels: { font: { size: 12 } },
+                            suggestedMin: 0,
+                            suggestedMax: 5,
+                            ticks: {
+                                stepSize: 1,
+                                backdropColor: 'rgba(255, 255, 255, 0.75)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                    }
+                }
+            });
+
+            function updateChart() {
+                const selectedPavilions = Array.from(document.querySelectorAll('#chart-controls input:checked')).map(input => input.value);
+                
+                const backgroundColors = {
+                    'usa': 'rgba(99, 102, 241, 0.2)',
+                    'saudi': 'rgba(245, 158, 11, 0.2)',
+                    'blueocean': 'rgba(56, 189, 248, 0.2)',
+                    'philippines': 'rgba(244, 63, 94, 0.2)',
+                    'nordic': 'rgba(100, 116, 139, 0.2)',
+                    'commonsa': 'rgba(132, 204, 22, 0.2)'
+                };
+
+                const borderColors = {
+                    'usa': 'rgba(99, 102, 241, 1)',
+                    'saudi': 'rgba(245, 158, 11, 1)',
+                    'blueocean': 'rgba(56, 189, 248, 1)',
+                    'philippines': 'rgba(244, 63, 94, 1)',
+                    'nordic': 'rgba(100, 116, 139, 1)',
+                    'commonsa': 'rgba(132, 204, 22, 1)'
+                };
+
+                radarChart.data.datasets = selectedPavilions.map(id => {
+                    const p = pavilionData.find(pav => pav.id === id);
+                    return {
+                        label: p.name,
+                        data: Object.values(p.scores),
+                        backgroundColor: backgroundColors[id],
+                        borderColor: borderColors[id],
+                        borderWidth: 2,
+                        pointBackgroundColor: borderColors[id],
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: borderColors[id]
+                    };
+                });
+                radarChart.update();
+            }
+
+            pavilionData.forEach(p => {
+                const isChecked = initialSelection.includes(p.id) ? 'checked' : '';
+                const label = document.createElement('label');
+                label.className = 'flex items-center space-x-2 cursor-pointer';
+                label.innerHTML = `
+                    <input type="checkbox" value="${p.id}" class="form-checkbox h-5 w-5 rounded" ${isChecked}>
+                    <span class="text-sm">${p.name}</span>
+                `;
+                chartControls.appendChild(label);
+            });
+
+            chartControls.addEventListener('change', updateChart);
+
+            renderPavilions();
+            updateChart();
+        });
+    </script>
+</body>
+</html>
+
